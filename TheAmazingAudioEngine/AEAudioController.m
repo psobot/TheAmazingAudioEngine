@@ -470,6 +470,9 @@ static OSStatus renderCallback(void *inRefCon, AudioUnitRenderActionFlags *ioAct
     }
     
     AudioTimeStamp timestamp = *inTimeStamp;
+    if (channel->timeStamp.mFlags == 0) {
+        channel->timeStamp = *inTimeStamp;
+    }
     
     if ( channel->audiobusOutputPort && ABOutputPortGetConnectedPortAttributes(channel->audiobusOutputPort) & ABInputPortAttributePlaysLiveAudio ) {
         // We're sending via the output port, and the receiver plays live - offset the timestamp by the reported latency
