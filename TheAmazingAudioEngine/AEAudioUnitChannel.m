@@ -153,10 +153,15 @@ static OSStatus renderCallback(id                        channel,
                                AEAudioController        *audioController,
                                const AudioTimeStamp     *time,
                                UInt32                    frames,
-                               AudioBufferList          *audio) {
+                               AudioBufferList          *audio,
+                               bool                     *outputIsSilence) {
     AEAudioUnitChannel *THIS = (AEAudioUnitChannel*)channel;
     AudioUnitRenderActionFlags flags = 0;
     checkResult(AudioUnitRender(THIS->_converterUnit ? THIS->_converterUnit : THIS->_audioUnit, &flags, time, 0, frames, audio), "AudioUnitRender");
+    
+    //  This is a nasty hack, but we need it for now.
+    if (outputIsSilence != NULL) *outputIsSilence = flags & kAudioUnitRenderAction_OutputIsSilence;
+    
     return noErr;
 }
 

@@ -222,7 +222,8 @@ static OSStatus audioUnitRenderCallback(void                       *inRefCon,
                                         UInt32                      inNumberFrames,
                                         AudioBufferList            *ioData) {
     AEAudioUnitFilter *THIS = (AEAudioUnitFilter*)inRefCon;
-    return THIS->_currentProducer(THIS->_currentProducerToken, ioData, &inNumberFrames);
+    bool outputIsSilence;
+    return THIS->_currentProducer(THIS->_currentProducerToken, ioData, &inNumberFrames, &outputIsSilence);
 }
 
 - (void)didRecreateGraph:(NSNotification*)notification {

@@ -109,7 +109,7 @@ static void notifyPlaybackStopped(AEAudioController *audioController, void *user
     THIS->_playhead = 0;
 }
 
-static OSStatus renderCallback(AEAudioFilePlayer *THIS, AEAudioController *audioController, const AudioTimeStamp *time, UInt32 frames, AudioBufferList *audio) {
+static OSStatus renderCallback(AEAudioFilePlayer *THIS, AEAudioController *audioController, const AudioTimeStamp *time, UInt32 frames, AudioBufferList *audio, bool *outputIsSilence) {
     int32_t playhead = THIS->_playhead;
     int32_t originalPlayhead = playhead;
     
@@ -163,6 +163,7 @@ static OSStatus renderCallback(AEAudioFilePlayer *THIS, AEAudioController *audio
     
     OSAtomicCompareAndSwap32(originalPlayhead, playhead, &THIS->_playhead);
     
+    *outputIsSilence = false;
     return noErr;
 }
 

@@ -55,9 +55,11 @@ static OSStatus renderCallback(id                        channel,
                                AEAudioController        *audioController,
                                const AudioTimeStamp     *time,
                                UInt32                    frames,
-                               AudioBufferList          *audio) {
+                               AudioBufferList          *audio,
+                               bool                     *outputIsSilence) {
     AEBlockChannel *THIS = (AEBlockChannel*)channel;
     THIS->_block(time, frames, audio);
+    *outputIsSilence = false;
     return noErr;
 }
 
