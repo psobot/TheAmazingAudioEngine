@@ -412,7 +412,7 @@ typedef struct __channel_producer_arg_t {
     int nextFilterIndex;
 } channel_producer_arg_t;
 
-static OSStatus channelAudioProducer(void *userInfo, AudioBufferList *audio, UInt32 *frames) {
+static OSStatus channelAudioProducer(void *userInfo, AudioBufferList *audio, UInt32 *frames, bool *outputIsSilence) {
     channel_producer_arg_t *arg = (channel_producer_arg_t*)userInfo;
     AEChannelRef channel = arg->channel;
     
@@ -439,8 +439,8 @@ static OSStatus channelAudioProducer(void *userInfo, AudioBufferList *audio, UIn
         for ( int i=0; i<audio->mNumberBuffers; i++ ) {
             memset(audio->mBuffers[i].mData, 0, audio->mBuffers[i].mDataByteSize);
         }
-        
-        status = callback(channelObj, channel->audioController, &channel->timeStamp, *frames, audio);
+
+        status = callback(channelObj, channel->audioController, &channel->timeStamp, *frames, audio, outputIsSilence);
         channel->timeStamp.mSampleTime += *frames;
         
     } else if ( channel->type == kChannelTypeGroup ) {
@@ -495,7 +495,8 @@ static OSStatus renderCallback(void *inRefCon, AudioUnitRenderActionFlags *ioAct
         .nextFilterIndex = 0
     };
     
-    OSStatus result = channelAudioProducer((void*)&arg, ioData, &inNumberFrames);
+    bool outputIsSilence;
+    OSStatus result = channelAudioProducer((void*)&arg, ioData, &inNumberFrames, &outputIsSilence);
     
     handleCallbacksForChannel(channel, &timestamp, inNumberFrames, ioData);
     
@@ -533,7 +534,7 @@ typedef struct __input_producer_arg_t {
     int nextFilterIndex;
 } input_producer_arg_t;
 
-static OSStatus inputAudioProducer(void *userInfo, AudioBufferList *audio, UInt32 *frames) {
+static OSStatus inputAudioProducer(void *userInfo, AudioBufferList *audio, UInt32 *frames, bool *outputIsSilence) {
     input_producer_arg_t *arg = (input_producer_arg_t*)userInfo;
     AEAudioController *THIS = arg->THIS;
     
@@ -634,7 +635,8 @@ static OSStatus inputAvailableCallback(void *inRefCon, AudioUnitRenderActionFlag
             table->audioBufferList->mBuffers[i].mDataByteSize = inNumberFrames * table->audioDescription.mBytesPerFrame;
         }
         
-        result = inputAudioProducer((void*)&arg, table->audioBufferList, &inNumberFrames);
+        bool outputIsSilence;
+        result = inputAudioProducer((void*)&arg, table->audioBufferList, &inNumberFrames, &outputIsSilence);
         
         // Pass audio to callbacks
         for ( int i=0; i<table->callbacks.count; i++ ) {
