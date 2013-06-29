@@ -66,8 +66,29 @@ static inline int min(int a, int b) { return a>b ? b : a; }
 
 static inline void AEAudioControllerError(OSStatus result, const char *operation, const char* file, int line) {
     int fourCC = CFSwapInt32HostToBig(result);
+    char *errorLabel;
+    switch (result) {
+        case kAudioUnitErr_InvalidProperty         : errorLabel = "InvalidProperty"; break;
+        case kAudioUnitErr_InvalidParameter        : errorLabel = "InvalidParameter"; break;
+        case kAudioUnitErr_InvalidElement          : errorLabel = "InvalidElement"; break;
+        case kAudioUnitErr_NoConnection            : errorLabel = "NoConnection"; break;
+        case kAudioUnitErr_FailedInitialization    : errorLabel = "FailedInitialization"; break;
+        case kAudioUnitErr_TooManyFramesToProcess  : errorLabel = "TooManyFramesToProcess"; break;
+        case kAudioUnitErr_InvalidFile             : errorLabel = "InvalidFile"; break;
+        case kAudioUnitErr_FormatNotSupported      : errorLabel = "FormatNotSupported"; break;
+        case kAudioUnitErr_Uninitialized           : errorLabel = "Uninitialized"; break;
+        case kAudioUnitErr_InvalidScope            : errorLabel = "InvalidScope"; break;
+        case kAudioUnitErr_PropertyNotWritable     : errorLabel = "PropertyNotWritable"; break;
+        case kAudioUnitErr_CannotDoInCurrentContext: errorLabel = "CannotDoInCurrentContext"; break;
+        case kAudioUnitErr_InvalidPropertyValue    : errorLabel = "InvalidPropertyValue"; break;
+        case kAudioUnitErr_PropertyNotInUse        : errorLabel = "PropertyNotInUse"; break;
+        case kAudioUnitErr_Initialized             : errorLabel = "Initialized"; break;
+        case kAudioUnitErr_InvalidOfflineRender    : errorLabel = "InvalidOfflineRender"; break;
+        case kAudioUnitErr_Unauthorized            : errorLabel = "Unauthorized"; break;
+        default: errorLabel = "?";
+    }
     @autoreleasepool {
-        NSLog(@"%s:%d: %s result %d %08X %4.4s\n", file, line, operation, (int)result, (int)result, (char*)&fourCC);
+        NSLog(@"%s:%d: %s result %d %08X %4.4s %s\n", file, line, operation, (int)result, (int)result, (char*)&fourCC, errorLabel);
     }
 }
 
