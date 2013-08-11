@@ -98,13 +98,15 @@ typedef enum {
  * @param time              The time the buffer will be played, automatically compensated for hardware latency.
  * @param frames            The number of frames required
  * @param audio             The audio buffer list - audio should be copied into the provided buffers
+ * @param outputIsSilence   A pointer to a boolean that will be set true if the output is silence, false otherwise. Pointer may be null.
  * @return A status code
  */
 typedef OSStatus (*AEAudioControllerRenderCallback) (id                        channel,
                                                      AEAudioController        *audioController,
                                                      const AudioTimeStamp     *time,
                                                      UInt32                    frames,
-                                                     AudioBufferList          *audio);
+                                                     AudioBufferList          *audio,
+                                                     bool                     *outputIsSilence);
 
 /*!
  * AEAudioPlayable protocol
@@ -246,11 +248,13 @@ typedef void (*AEAudioControllerAudioCallback) (id                        receiv
  * @param producerToken    An opaque pointer to be passed to the function
  * @param audio            Audio buffer list to be written to
  * @param frames           Number of frames to produce on input, number of frames produced on output
+ * @param outputIsSilence  Boolean return value that indicates if the returned audio is completely silent.
  * @return A status code
  */
 typedef OSStatus (*AEAudioControllerFilterProducer)(void            *producerToken, 
                                                     AudioBufferList *audio, 
-                                                    UInt32          *frames);
+                                                    UInt32          *frames,
+                                                    bool            *outputIsSilence);
 
 
 /*!
@@ -391,7 +395,7 @@ typedef void (*AEAudioControllerTimingCallback) (id                        recei
  *  See @link AEAudioController::createChannelGroup @endlink for more info.
  */
 typedef struct _channel_group_t* AEChannelGroupRef;
-
+    
 @class AEAudioController;
 
 /*!
