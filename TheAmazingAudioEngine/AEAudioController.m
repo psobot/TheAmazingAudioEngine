@@ -460,7 +460,6 @@ static OSStatus channelAudioProducer(void *userInfo, AudioBufferList *audio, UIn
         for ( int i=0; i<audio->mNumberBuffers; i++ ) {
             memset(audio->mBuffers[i].mData, 0, audio->mBuffers[i].mDataByteSize);
         }
-
         status = callback(channelObj, channel->audioController, &channel->timeStamp, *frames, audio, outputIsSilence);
         channel->timeStamp.mSampleTime += *frames;
         
@@ -501,6 +500,12 @@ static OSStatus renderCallback(void *inRefCon, AudioUnitRenderActionFlags *ioAct
     } else {
         // Adjust timestamp to factor in hardware output latency
         timestamp.mHostTime += AEAudioControllerOutputLatency(channel->audioController)*__secondsToHostTicks;
+    }
+    
+    if ( channel->timeStamp.mFlags == 0 ) {
+        channel->timeStamp = *inTimeStamp;
+    } else {
+        channel->timeStamp.mHostTime = inTimeStamp->mHostTime;
     }
     
     channel_producer_arg_t arg = {
@@ -812,6 +817,7 @@ static OSStatus topRenderNotifyCallback(void *inRefCon, AudioUnitRenderActionFla
     _allowMixingWithOtherApps = YES;
     _audioDescription = audioDescription;
     _inputEnabled = enableInput;
+    _masterOutputVolume = 1.0;
     _voiceProcessingEnabled = useVoiceProcessing;
     _inputMode = AEInputModeFixedAudioFormat;
     _voiceProcessingOnlyForSpeakerAndMicrophone = YES;
@@ -1722,6 +1728,14 @@ NSTimeInterval AEConvertFramesToSeconds(AEAudioController *THIS, long frames) {
                 "AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers)");
 }
 
+-(void)setMasterOutputVolume:(float)masterOutputVolume {
+    _masterOutputVolume = masterOutputVolume;
+    
+    AudioUnitParameterValue value = _masterOutputVolume;
+    OSStatus result = AudioUnitSetParameter(_topGroup->mixerAudioUnit, kMultiChannelMixerParam_Volume, kAudioUnitScope_Output, 0, value, 0);
+    checkResult(result, "AudioUnitSetParameter(kMultiChannelMixerParam_Volume)");
+}
+
 - (BOOL)running {
     if ( !_audioGraph ) return NO;
     
@@ -1746,7 +1760,7 @@ NSTimeInterval AEConvertFramesToSeconds(AEAudioController *THIS, long frames) {
 }
 
 -(NSString*)audioRoute {
-    if ( _topChannel->audiobusOutputPort && ABOutputPortGetConnectedPortAttributes(_topChannel->audiobusOutputPort) & ABInputPortAttributePlaysLiveAudio ) {
+    if ( _topChannel && _topChannel->audiobusOutputPort && ABOutputPortGetConnectedPortAttributes(_topChannel->audiobusOutputPort) & ABInputPortAttributePlaysLiveAudio ) {
         return @"Audiobus";
     } else {
         return _audioRoute;
@@ -1754,7 +1768,7 @@ NSTimeInterval AEConvertFramesToSeconds(AEAudioController *THIS, long frames) {
 }
 
 -(BOOL)playingThroughDeviceSpeaker {
-    if ( _topChannel->audiobusOutputPort && ABOutputPortGetConnectedPortAttributes(_topChannel->audiobusOutputPort) & ABInputPortAttributePlaysLiveAudio ) {
+    if ( _topChannel && _topChannel->audiobusOutputPort && ABOutputPortGetConnectedPortAttributes(_topChannel->audiobusOutputPort) & ABInputPortAttributePlaysLiveAudio ) {
         return NO;
     } else {
         return _playingThroughDeviceSpeaker;
@@ -2207,6 +2221,10 @@ NSTimeInterval AEAudioControllerOutputLatency(AEAudioController *controller) {
     // Register a callback to be notified when the main mixer unit renders
     checkResult(AudioUnitAddRenderNotify(_topGroup->mixerAudioUnit, &topRenderNotifyCallback, self), "AudioUnitAddRenderNotify");
     
+    // Set the master volume
+    AudioUnitParameterValue value = _masterOutputVolume;
+    checkResult(AudioUnitSetParameter(_topGroup->mixerAudioUnit, kMultiChannelMixerParam_Volume, kAudioUnitScope_Output, 0, value, 0), "AudioUnitSetParameter(kMultiChannelMixerParam_Volume)");
+    
     // Initialize the graph
     result = AUGraphInitialize(_audioGraph);
     if ( !checkResult(result, "AUGraphInitialize") ) {
@@ -2221,6 +2239,7 @@ NSTimeInterval AEAudioControllerOutputLatency(AEAudioController *controller) {
 }
 
 - (void)replaceIONode {
+    if ( !_topChannel ) return;
     BOOL useVoiceProcessing = [self usingVPIO];
     
     AudioComponentDescription io_desc = {
@@ -2353,7 +2372,7 @@ NSTimeInterval AEAudioControllerOutputLatency(AEAudioController *controller) {
 }
 
 - (BOOL)mustUpdateVoiceProcessingSettings {
-    
+    if ( !_audioGraph ) return NO;
     BOOL useVoiceProcessing = [self usingVPIO];
 
     AudioComponentDescription target_io_desc = {
@@ -2383,6 +2402,7 @@ NSTimeInterval AEAudioControllerOutputLatency(AEAudioController *controller) {
 }
 
 - (BOOL)updateInputDeviceStatus {
+    if ( !_audioGraph ) return NO;
     NSAssert(_inputEnabled, @"Input must be enabled");
     
     BOOL success = YES;
