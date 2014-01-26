@@ -460,7 +460,6 @@ static OSStatus channelAudioProducer(void *userInfo, AudioBufferList *audio, UIn
         for ( int i=0; i<audio->mNumberBuffers; i++ ) {
             memset(audio->mBuffers[i].mData, 0, audio->mBuffers[i].mDataByteSize);
         }
-
         status = callback(channelObj, channel->audioController, &channel->timeStamp, *frames, audio, outputIsSilence);
         channel->timeStamp.mSampleTime += *frames;
         
