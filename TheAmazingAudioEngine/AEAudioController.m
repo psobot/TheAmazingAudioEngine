@@ -1242,7 +1242,7 @@ BOOL AEAudioControllerRenderMainOutput(AEAudioController *audioController, Audio
         .ioActionFlags = 0,
         .nextFilterIndex = 0
     };
-    OSStatus result = channelAudioProducer((void*)&arg, ioData, &inNumberFrames);
+    OSStatus result = channelAudioProducer((void*)&arg, ioData, &inNumberFrames, NULL);
     handleCallbacksForChannel(arg.channel, &inTimeStamp, inNumberFrames, ioData);
     return result;
 }
