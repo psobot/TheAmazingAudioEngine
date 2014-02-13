@@ -39,16 +39,17 @@ static inline BOOL _checkResult(OSStatus result, const char *operation, const ch
 
 @interface AEAudioFileWriter () {
     BOOL                        _writing;
-    ExtAudioFileRef             _audioFile;
     UInt32                      _priorMixOverrideValue;
     AudioStreamBasicDescription _audioDescription;
 }
 
 @property (nonatomic, retain, readwrite) NSString *path;
+@property (nonatomic, assign, readwrite) ExtAudioFileRef audioFile;
 @end
 
 @implementation AEAudioFileWriter
 @synthesize path = _path;
+@synthesize audioFile = _audioFile;
 
 + (BOOL)AACEncodingAvailable {
 #if TARGET_IPHONE_SIMULATOR
@@ -105,7 +106,7 @@ static inline BOOL _checkResult(OSStatus result, const char *operation, const ch
     [super dealloc];
 }
 
-- (BOOL)beginWritingToFileAtPath:(NSString*)path fileType:(AudioFileTypeID)fileType error:(NSError**)error {
+- (BOOL)prepareForWritingToFileAtPath:(NSString*)path fileType:(AudioFileTypeID)fileType error:(NSError**)error {
     OSStatus status;
     
     if ( fileType == kAudioFileM4AType ) {
@@ -215,14 +216,16 @@ static inline BOOL _checkResult(OSStatus result, const char *operation, const ch
         ExtAudioFileDispose(_audioFile);
         return NO;
     }
-    
+
+    self.path = path;
+
+    return YES;
+}
+
+- (void)startWriting {
     // Init the async file writing mechanism
     checkResult(ExtAudioFileWriteAsync(_audioFile, 0, NULL), "ExtAudioFileWriteAsync");
-    
-    self.path = path;
     _writing = YES;
-    
-    return YES;
 }
 
 - (void)finishWriting {

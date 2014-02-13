@@ -56,7 +56,7 @@ enum {
 - (id)initWithAudioDescription:(AudioStreamBasicDescription)audioDescription;
 
 /*!
- * Begin write operation
+ * Prepare write operation
  *
  *  This will create the output file and prepare internal structures for writing.
  *
@@ -65,7 +65,14 @@ enum {
  * @param error On output, if not NULL, the error if one occurred
  * @return YES on success; NO on error
  */
-- (BOOL)beginWritingToFileAtPath:(NSString*)path fileType:(AudioFileTypeID)fileType error:(NSError**)error;
+- (BOOL)prepareForWritingToFileAtPath:(NSString*)path fileType:(AudioFileTypeID)fileType error:(NSError**)error;
+
+/*!
+ * Start the writing operation
+ *
+ *  Starts the write. Must be called after `prepareForWritingToFileAtPath:fileType:error`
+ */
+- (void)startWriting;
 
 /*!
  * Complete writing operation
@@ -107,6 +114,11 @@ OSStatus AEAudioFileWriterAddAudioSynchronously(AEAudioFileWriter* writer, Audio
  * The path to the file being written
  */
 @property (nonatomic, retain, readonly) NSString *path;
+
+/*!
+ * The audioFile ref.
+ */
+@property (nonatomic, assign, readonly) ExtAudioFileRef audioFile;
 
 @end
 
